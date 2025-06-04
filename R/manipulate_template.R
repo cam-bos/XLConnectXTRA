@@ -96,15 +96,16 @@ cleanup_template <- function(rpt_obj) {
   for (i in 1:length(templates)) {
     XLConnect::removeSheet(wb, templates[i])
 
-    named_ranges <- XLConnect::getReferenceFormula(
-      wb, XLConnect::getDefinedNames(wb)
-    )
-    named_ranges <- named_ranges[
-      stringr::str_detect(named_ranges, templates[i])
-    ]
+    nr_names <- XLConnect::getDefinedNames(wb)
+    nr_loc <- XLConnect::getReferenceFormula(wb, nr_names)
 
-    for (i in 1:length(named_ranges)) {
-      XLConnect::removeName(wb, names(named_ranges)[i])
+    rel_ranges <- stringr::str_detect(nr_loc, templates[i])
+
+    template_nr_names <- nr_names[rel_ranges]
+    template_nr_loc <- nr_loc[rel_ranges]
+
+    for (j in 1:length(template_nr_names)) {
+      XLConnect::removeName(wb, template_nr_names[j])
     }
   }
 }
