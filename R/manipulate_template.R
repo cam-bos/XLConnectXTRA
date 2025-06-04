@@ -50,36 +50,25 @@ load_xl_template <- function(template_name) {
 duplicate_template_sheet <- function(wb, template_name, uniq_name) {
   XLConnect::cloneSheet(wb, sheet = template_name, name = uniq_name)
 
-  named_ranges <- XLConnect::getReferenceFormula(
-    wb, XLConnect::getDefinedNames(wb)
-  )
-  named_ranges <- named_ranges[
-    stringr::str_detect(named_ranges, template_name)
-  ]
+  nr_names <- XLConnect::getDefinedNames(wb)
+  nr_loc <- XLConnect::getReferenceFormula(wb, nr_names)
 
-  original_names <- names(named_ranges)
+  rel_ranges <- stringr::str_detect(nr_loc, template_name)
 
-  named_ranges <- stringr::str_replace(named_ranges, "^.+!", "")
-  names(named_ranges) <- stringr::str_replace(
-    original_names,
-    stringr::str_c(template_name, "_", sep = ""),
-    ""
+  template_nr_names <- nr_names[rel_ranges]
+  template_nr_loc <- nr_loc[rel_ranges]
+
+  clean_nr_loc <- stringr::str_replace(
+    template_nr_loc, "^.+!", ""
   )
 
   # Define ranges for newly created sheet
-  for (i in 1:length(named_ranges)) {
+  for (i in 1:length(clean_nr_loc)) {
     XLConnect::createName(
       wb,
-      name = ifelse(
-        nchar(uniq_name) > 0,
-        stringr::str_c(uniq_name, names(named_ranges)[i], sep = "_"),
-        stringr::str_c(uniq_name, names(named_ranges)[i], sep = "_")
-      ),
+      name = stringr::str_c(uniq_name, template_nr_names[i], sep = "_"),
       formula = stringr::str_c(
-        stringr::str_c("'", uniq_name, "'", sep = ""),
-        named_ranges[i],
-        sep = "!"
-      )
+        stringr::str_c("'", uniq_name, "'", sep = ""), clean_nr_loc[i], sep = "!")
     )
   }
 }
